@@ -19,8 +19,11 @@
     <span class="counter" id="counter-sessions" title="Sessions tracked">
       <span class="counter-label">sessions</span><span class="counter-value">0</span>
     </span>
-    <span class="counter counter-alert" id="counter-alerts" title="Total security alerts">
+    <span class="counter counter-alert" id="counter-alerts" title="Total reverse-shell / security alerts">
       <span class="counter-label">alerts</span><span class="counter-value">0</span>
+    </span>
+    <span class="counter counter-finding" id="counter-findings" title="Confirmed findings (evidence of a vuln / bypass / execution)">
+      <span class="counter-label">findings</span><span class="counter-value">0</span>
     </span>
   </div>
 </header>
@@ -40,6 +43,7 @@
         <button type="button" class="quick-btn" data-quick="NETWORK">NETWORK</button>
         <button type="button" class="quick-btn" data-quick="ERRORS">ERRORS</button>
         <button type="button" class="quick-btn" data-quick="ALERTS">ALERTS</button>
+        <button type="button" class="quick-btn" data-quick="FINDINGS">FINDINGS</button>
       </div>
       <label id="redaction-toggle-label" class="toolbar-toggle">
         <input type="checkbox" id="redaction-toggle">Redaction

@@ -1,6 +1,7 @@
 import json, re
 from backend import detection
 from backend import attack as attack_mod
+from backend import findings as findings_mod
 
 def slug(name, fallback=""):
     base = (name or "").strip() or (fallback or "").strip()
@@ -21,7 +22,9 @@ def _mk_event(row, etype, **kw):
          "arguments":None, "command_explained":None, "stdout":None, "stderr":None,
          "exit_code":None, "http_status":None, "error":None, "tier":None,
          "approval_decision":None, "external_connections":[], "security_alerts":[],
-         "attack":None, "attack_id":None, "raw_json":None}
+         "attack":None, "attack_id":None,
+         "findings":[], "finding_severity":None, "finding_category":None,
+         "raw_json":None}
     e.update(kw); return e
 
 class MessageState:
@@ -68,6 +71,9 @@ class MessageState:
         alerts = detection.scan_reverse_shell(command, stdout or "", stderr or "", conns)
         explained = detection.explain(tool, args)
         atk = attack_mod.classify(tool, args, command, explained)
+        finds = findings_mod.scan_findings(command, stdout, stderr,
+                                           http_status=None, exit_code=exit_code,
+                                           connections=conns, security_alerts=alerts, tool=tool)
         etype = "tool_call"
         return [_mk_event(req_row, etype, tool=tool, extension=ext,
                           command=command, arguments=args,
@@ -77,5 +83,8 @@ class MessageState:
                           security_alerts=alerts,
                           attack=(atk or {}).get("label"),
                           attack_id=(atk or {}).get("technique_id"),
+                          findings=finds,
+                          finding_severity=(finds[0]["severity"] if finds else None),
+                          finding_category=(finds[0]["category"] if finds else None),
                           event_id=f"{req_row['session_id']}:{req_row['id']}:{cid}",
                           raw_json={"request":req_it,"response":resp_it})]

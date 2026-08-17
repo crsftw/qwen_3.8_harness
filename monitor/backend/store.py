@@ -6,7 +6,7 @@ CREATE TABLE IF NOT EXISTS sessions(
   id TEXT PRIMARY KEY, name TEXT, label TEXT, created_ms INTEGER,
   working_dir TEXT, last_activity_ms INTEGER,
   event_count INTEGER DEFAULT 0, error_count INTEGER DEFAULT 0,
-  conn_count INTEGER DEFAULT 0, alert_count INTEGER DEFAULT 0);
+  conn_count INTEGER DEFAULT 0, alert_count INTEGER DEFAULT 0, finding_count INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS events(
   seq INTEGER PRIMARY KEY AUTOINCREMENT,
   event_id TEXT UNIQUE, session_id TEXT, timestamp_ms INTEGER,
@@ -14,20 +14,22 @@ CREATE TABLE IF NOT EXISTS events(
   command_explained TEXT, stdout TEXT, stderr TEXT, exit_code INTEGER,
   http_status INTEGER, error TEXT, tier TEXT, approval_decision TEXT,
   severity TEXT, destination TEXT, attack TEXT, attack_id TEXT,
-  arguments_json TEXT, connections_json TEXT, alerts_json TEXT, raw_json TEXT);
+  finding_severity TEXT, finding_category TEXT,
+  arguments_json TEXT, connections_json TEXT, alerts_json TEXT, findings_json TEXT, raw_json TEXT);
 CREATE INDEX IF NOT EXISTS ix_ev_session ON events(session_id, seq);
 CREATE INDEX IF NOT EXISTS ix_ev_ts ON events(timestamp_ms);
 CREATE INDEX IF NOT EXISTS ix_ev_type ON events(event_type);
 CREATE INDEX IF NOT EXISTS ix_ev_sev ON events(severity);
 CREATE INDEX IF NOT EXISTS ix_ev_dest ON events(destination);
 CREATE INDEX IF NOT EXISTS ix_ev_attack ON events(attack);
+CREATE INDEX IF NOT EXISTS ix_ev_finding ON events(finding_severity);
 CREATE TABLE IF NOT EXISTS cursors(name TEXT PRIMARY KEY, value INTEGER);
 """
 
 _COLMAP = {  # per-column filter key -> event field(s) to test
   "date":"timestamp_ms","command":"command","explained":"command_explained",
   "response":"_response","error":"error","external":"_external",
-  "attack":"attack","tool":"tool","tier":"tier","severity":"severity"}
+  "attack":"attack","finding":"finding_category","tool":"tool","tier":"tier","severity":"severity"}
 
 class Store:
     def __init__(self, path):
@@ -39,7 +41,7 @@ class Store:
     def _row_to_event(self, r):
         e = dict(r)
         for k_json, k in (("arguments_json","arguments"),("connections_json","external_connections"),
-                          ("alerts_json","security_alerts"),("raw_json","raw_json")):
+                          ("alerts_json","security_alerts"),("findings_json","findings"),("raw_json","raw_json")):
             e[k] = json.loads(e.pop(k_json) or "null")
         return e
 
@@ -53,27 +55,32 @@ class Store:
             cur = self.db.execute(
               """INSERT OR IGNORE INTO events(event_id,session_id,timestamp_ms,event_type,tool,
                  extension,command,command_explained,stdout,stderr,exit_code,http_status,error,
-                 tier,approval_decision,severity,destination,attack,attack_id,arguments_json,connections_json,
-                 alerts_json,raw_json) VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                 tier,approval_decision,severity,destination,attack,attack_id,
+                 finding_severity,finding_category,arguments_json,connections_json,
+                 alerts_json,findings_json,raw_json)
+                 VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
               (ev["event_id"],ev["session_id"],ev["timestamp_ms"],ev["event_type"],ev.get("tool"),
                ev.get("extension"),ev.get("command"),ev.get("command_explained"),ev.get("stdout"),
                ev.get("stderr"),ev.get("exit_code"),ev.get("http_status"),ev.get("error"),
                ev.get("tier"),ev.get("approval_decision"),severity,dest,
                ev.get("attack"),ev.get("attack_id"),
+               ev.get("finding_severity"),ev.get("finding_category"),
                json.dumps(ev.get("arguments")),json.dumps(conns),json.dumps(alerts),
-               json.dumps(ev.get("raw_json"))))
+               json.dumps(ev.get("findings")),json.dumps(ev.get("raw_json"))))
             if cur.rowcount:
                 seq = cur.lastrowid
                 self.db.execute(
-                  """INSERT INTO sessions(id, last_activity_ms, event_count, error_count, conn_count, alert_count)
-                     VALUES(?,?,1,?,?,?)
+                  """INSERT INTO sessions(id, last_activity_ms, event_count, error_count, conn_count, alert_count, finding_count)
+                     VALUES(?,?,1,?,?,?,?)
                      ON CONFLICT(id) DO UPDATE SET
                        last_activity_ms=MAX(COALESCE(last_activity_ms,0), excluded.last_activity_ms),
                        event_count=event_count+1,
                        error_count=error_count+excluded.error_count,
                        conn_count=conn_count+excluded.conn_count,
-                       alert_count=alert_count+excluded.alert_count""",
-                  (ev["session_id"], ev["timestamp_ms"], 1 if ev.get("error") else 0, len(conns), len(alerts)))
+                       alert_count=alert_count+excluded.alert_count,
+                       finding_count=finding_count+excluded.finding_count""",
+                  (ev["session_id"], ev["timestamp_ms"], 1 if ev.get("error") else 0, len(conns), len(alerts),
+                   len(ev.get("findings") or [])))
                 self.db.commit()
                 return seq
             row = self.db.execute("SELECT seq FROM events WHERE event_id=?", (ev["event_id"],)).fetchone()
