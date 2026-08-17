@@ -84,6 +84,44 @@ Then open `http://<host>:8787` and log in with the credentials from `monitor/con
 
 Step-by-step setup for each component lives in [`docs/`](docs/) (`phase1-goose-setup.md` → `phase7-observability.md`) and the full design is in [`docs/spec-qwen-agent-architecture.md`](docs/spec-qwen-agent-architecture.md).
 
+## Model backends: Ollama (default) · vLLM FP8 (optional)
+
+Everything below Goose is model-agnostic — both backends expose an OpenAI-compatible `/v1`, and Goose binds one per session. `vllm/switch-model.sh` flips between them; the tool/gateway stack is untouched. They can't run at once (the FP8 weights need most of the VRAM), so switching stops the other.
+
+### Ollama (Q4) — the portable default
+The Quickstart above: `ollama pull qwen3.8:27b` (or any tool-calling-capable chat model), served on `:11434`. Always-on, nothing else to do.
+
+### vLLM (FP8, uncensored) — optional, GPU-heavy
+Serves the uncensored FP8 model through the model author's **pinned Docker image** (`vllm/vllm-openai:v0.24.0`) — there is **no pip install of vLLM** (the pip build deadlocks on Blackwell GPUs; the abandoned `vllm/install-vllm.sh` is kept only for reference). Requires NVIDIA GPU(s), Docker, and the NVIDIA Container Toolkit.
+
+**1. Download the model** (gated on Hugging Face — request access on the model page first):
+
+```bash
+pip install -U "huggingface_hub[cli]"
+huggingface-cli login                                        # paste an HF token that has access
+huggingface-cli download orcarouter/Qwen3.8-27B-Uncensored-FP8
+```
+
+It lands in `~/.cache/huggingface/hub/…`, where the launcher looks for it (override with `VLLM_MODEL_REPO` / `VLLM_SNAPSHOT`).
+
+**2. Start / stop / inspect the server** (binds `127.0.0.1:8001`; first start ~4–5 min while it pulls the image and loads weights):
+
+```bash
+vllm/serve-docker.sh start        # also: stop | status | logs
+```
+
+**3. Switch Goose between the two backends** (rewrites `~/.config/goose/config.yaml` and starts/stops the vLLM container to free VRAM):
+
+```bash
+vllm/switch-model.sh fp8          # start vLLM FP8 + point Goose at it
+vllm/switch-model.sh ollama       # back to Ollama Q4 (stops vLLM)
+vllm/switch-model.sh status       # show the active backend + vLLM health
+```
+
+> **Start a fresh `goose session` after switching** — Goose binds its provider at session start.
+
+**Hardware note:** this FP8 path was tuned for 2× RTX PRO 4000 Blackwell (24 GB, no NVLink). The Blackwell/FP8 gotchas already solved — tensor-parallel across 2 GPUs, `--disable-custom-all-reduce`, `NCCL_P2P_DISABLE=1`, graph (not eager) mode, FP8 KV cache, dropped MTP draft model — are documented in the header of [`vllm/run-vllm-docker.sh`](vllm/run-vllm-docker.sh) and tunable via `VLLM_*` env vars.
+
 ## Repository layout
 
 | Path | What it is |
