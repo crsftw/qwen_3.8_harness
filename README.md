@@ -27,7 +27,7 @@ User → Goose (agent loop, MCP client)
                       ├ nettools/ dig / whois / tracepath / openssl / nc
                       └ kali/     nmap / nikto / gobuster / whatweb   (all HIGH-tier)
 
-model backend (switchable):  Ollama  qwen  (:11434)   |   vLLM  qwen-fp8  (Docker, :8001)
+model backend (switchable):  Ollama  qwen3.8:27b · Q4_K_M  (:11434)   |   vLLM  qwen-fp8  (Docker, :8001)
 
               ┌─────────────────────────────────────────────┐
 Goose sessions │  →  reads Goose's sessions.db (read-only)   │  →  Activity Monitor
