@@ -58,6 +58,7 @@ const dom = {
   indicator: document.getElementById("live-indicator"),
   counterSessions: document.querySelector("#counter-sessions .counter-value"),
   counterAlerts: document.querySelector("#counter-alerts .counter-value"),
+  counterFindings: document.querySelector("#counter-findings .counter-value"),
   eventsBody: document.getElementById("events-body"),
   tableWrap: document.getElementById("table-wrap"),
   colgroup: document.getElementById("col-group"),
@@ -259,12 +260,14 @@ function buildSessionTab(s) {
 }
 
 function updateHeaderCounters() {
-  let alertTotal = 0;
+  let alertTotal = 0, findingTotal = 0;
   for (const s of state.sessions.values()) {
     alertTotal += s.alert_count || 0;
+    findingTotal += s.finding_count || 0;
   }
   dom.counterSessions.textContent = String(state.sessions.size);
   dom.counterAlerts.textContent = String(alertTotal);
+  if (dom.counterFindings) dom.counterFindings.textContent = String(findingTotal);
 }
 
 // ---------------------------------------------------------------------
@@ -567,6 +570,8 @@ function quickFilterPredicate(kind) {
       return (e) => e.error != null;
     case "ALERTS":
       return (e) => Array.isArray(e.security_alerts) && e.security_alerts.length > 0;
+    case "FINDINGS":
+      return (e) => Array.isArray(e.findings) && e.findings.length > 0;
     case "ALL":
     default:
       return () => true;
@@ -586,7 +591,7 @@ function matchesAllFilters(e) {
   if (cols.external && !matches(cols.external, externalText(e))) return false;
 
   if (state.filters.global) {
-    const hay = [e.command, e.command_explained, e.attack, e.stdout, e.stderr, e.error, e.tool, e.extension, externalText(e)]
+    const hay = [e.command, e.command_explained, e.attack, e.finding_category, e.stdout, e.stderr, e.error, e.tool, e.extension, externalText(e)]
       .filter(Boolean).join(" \n ");
     if (!matches(state.filters.global, hay)) return false;
   }
@@ -699,6 +704,7 @@ function buildRow(e) {
   tr.dataset.eventId = e.event_id;
   const hasAlerts = Array.isArray(e.security_alerts) && e.security_alerts.length > 0;
   if (hasAlerts) tr.classList.add("alert-row");
+  if (Array.isArray(e.findings) && e.findings.length > 0) tr.classList.add("finding-row");
 
   for (const col of state.columns.order) {
     tr.appendChild(buildCell(col, e));
@@ -928,9 +934,37 @@ function buildAlertBadge(alerts) {
   return wrap;
 }
 
+function buildFindingBadge(findings) {
+  const top = findings[0] || {};
+  const wrap = document.createElement("div");
+  wrap.className = "finding-badge";
+
+  const title = document.createElement("span");
+  title.className = "finding-badge-title";
+  title.textContent = "★ FINDING";
+
+  const chip = document.createElement("span");
+  chip.className = `chip chip-${top.severity || ""}`;
+  chip.textContent = top.severity || "";
+
+  const cat = document.createElement("span");
+  cat.className = "finding-cat";
+  cat.textContent = top.category || "";
+
+  const ev = document.createElement("span");
+  ev.className = "finding-evidence";
+  if (top.evidence) { ev.textContent = `“${top.evidence}”`; ev.title = top.evidence; }
+
+  wrap.append(title, chip, cat, ev);
+  return wrap;
+}
+
 function buildErrorCell(e) {
   const td = document.createElement("td");
   td.className = "cell-error";
+  if (Array.isArray(e.findings) && e.findings.length) {
+    td.appendChild(buildFindingBadge(e.findings));
+  }
   if (Array.isArray(e.security_alerts) && e.security_alerts.length) {
     td.appendChild(buildAlertBadge(e.security_alerts));
   }
@@ -1050,9 +1084,18 @@ function openDetail(e) {
   addDetailField(grid, "Extension", e.extension);
   addDetailField(grid, "Tier", e.tier);
   addDetailField(grid, "Approval Decision", e.approval_decision);
+  addDetailField(grid, "MITRE ATT&CK", e.attack);
+  addDetailField(grid, "Finding", e.finding_severity ? `${e.finding_severity} — ${e.finding_category}` : null);
   addDetailField(grid, "Exit Code", e.exit_code);
   addDetailField(grid, "HTTP Status", e.http_status);
   wrapper.appendChild(grid);
+
+  if (Array.isArray(e.findings) && e.findings.length) {
+    const f = e.findings[0];
+    wrapper.appendChild(buildCopyableBlock(
+      `★ Finding — ${f.severity} ${f.category} [${(f.reasons || []).join(", ")}]`,
+      maybeRedact(f.evidence || ""), true));
+  }
 
   wrapper.appendChild(buildCopyableBlock("Command", maybeRedact(e.command || ""), true));
   wrapper.appendChild(buildCopyableBlock("Arguments (JSON)", maybeRedact(JSON.stringify(e.arguments || {}, null, 2)), true));

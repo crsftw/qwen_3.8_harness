@@ -552,6 +552,23 @@ pre.json-pre, pre.cmd-pre, pre.resp-pre {
 .alert-reasons { color: var(--text-dim); }
 .alert-dest { color: var(--c-orange); }
 
+/* Findings — evidence the agent achieved something. Gold, and a STATIC row
+   accent (no pulse; the pulse is reserved for reverse-shell alerts). */
+.finding-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  color: var(--c-amber);
+  font-size: 11px;
+  margin-bottom: 3px;
+}
+.finding-badge-title { font-weight: 700; letter-spacing: 0.02em; }
+.finding-cat { color: var(--text); font-weight: 600; }
+.finding-evidence { color: var(--text-dim); font-style: italic; }
+tr.finding-row td { box-shadow: inset 3px 0 0 var(--c-amber); }
+.counter-finding .counter-value { color: var(--c-amber); }
+
 .conn-badge {
   display: inline-flex;
   align-items: center;
