@@ -43,10 +43,15 @@ gateway audit  │  →  tails gateway/state/audit.log           │      dashbo
 
 A live, dark security-operations dashboard that **watches** the agent — it opens Goose's session store read-only and tails the gateway's audit log, correlates them, and streams a normalized event feed to the browser over WebSocket. It never writes to or influences the agent.
 
+<img width="1463" height="630" alt="Screenshot 2026-08-17 at 16 52 15" src="https://github.com/user-attachments/assets/950f6963-4224-443d-a654-98d513944aa1" />
+
+
 - **Session sidebar** with `id_keyword` labels and live status (ACTIVE / IDLE / COMPLETED / ERROR).
 - **Event table:** timestamp, command, a plain-English explanation, **MITRE ATT&CK tactic:technique** (e.g. *Reconnaissance: Active Scanning*), response, errors, and external connections — with per-column wildcard filters, quick filters, expand/collapse, resizable/persisted columns, and a detail view.
 - **Reverse-shell detection:** multi-indicator weighted scoring that flags suspected reverse shells (tuned to not false-positive on ordinary recon), shown as pulsing alerts.
 - **Security-first:** LAN-bound + HTTP Basic Auth on every route, model chain-of-thought never stored or shown, optional secret redaction.
+
+
 
 Full details: [`monitor/README.md`](monitor/README.md).
 
