@@ -1,0 +1,31 @@
+# --- Runtime state / secrets — never commit (see docs/ANTI_PATTERNS.md P1) ---
+workspace/
+gateway/state/*
+!gateway/state/.gitkeep
+vllm/state/*
+!vllm/state/.gitkeep
+vllm/venv/
+web/searxng/runtime/
+*.log
+
+# --- Local dashboard config & data (contains the password / captured activity) ---
+monitor/config.yaml
+monitor/events.db
+monitor/events.db-*
+
+# --- Python / build caches ---
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+env/
+*.egg-info/
+
+# --- Editor / OS ---
+.DS_Store
+.idea/
+.vscode/
+
+# --- Node (frontend has no build step, but just in case) ---
+node_modules/

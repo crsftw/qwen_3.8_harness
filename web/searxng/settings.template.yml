@@ -1,0 +1,11 @@
+# SearXNG settings template. run-searxng.sh materializes runtime/settings.yml with a
+# generated secret_key (never commit the secret — ANTI_PATTERNS P1).
+use_default_settings: true
+server:
+  secret_key: "__SECRET_KEY__"
+  limiter: false        # local single-user; disable bot rate-limiting so the JSON API works
+  image_proxy: false
+search:
+  formats:
+    - html
+    - json              # required for web_search

@@ -1,0 +1,26 @@
+{
+  "_comment": "Tier policy. LOW=auto, MEDIUM=auto+logged, HIGH=human approval. Per-tool. sandbox_bash is HIGH to exercise the gate; all kali_* are genuinely HIGH (offensive tools, approval every call).",
+  "servers": {
+    "sandbox": {
+      "cmd": ["bash", "${QH_ROOT}/sandbox/run-sandbox.sh"],
+      "default_tier": "MEDIUM",
+      "tools": {"bash": "HIGH", "write_file": "MEDIUM", "read_file": "LOW", "list_dir": "LOW"}
+    },
+    "web": {
+      "cmd": ["bash", "${QH_ROOT}/web/run-web.sh"],
+      "default_tier": "MEDIUM",
+      "tools": {"web_search": "LOW", "web_fetch": "MEDIUM"}
+    },
+    "net": {
+      "cmd": ["bash", "${QH_ROOT}/nettools/run-net.sh"],
+      "default_tier": "MEDIUM",
+      "tools": {"net_dig": "LOW", "net_whois": "LOW", "net_tracepath": "MEDIUM", "net_openssl": "MEDIUM", "net_nc": "MEDIUM"}
+    },
+    "kali": {
+      "cmd": ["bash", "${QH_ROOT}/kali/run-kali.sh"],
+      "default_tier": "HIGH",
+      "tools": {"kali_nmap": "HIGH", "kali_nikto": "HIGH", "kali_gobuster": "HIGH", "kali_whatweb": "HIGH", "kali_shell": "HIGH"}
+    }
+  },
+  "tier_actions": {"LOW": "auto", "MEDIUM": "auto", "HIGH": "approve"}
+}

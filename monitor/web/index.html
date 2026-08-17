@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Goose Activity Monitor</title>
+<link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+<header id="header">
+  <div class="brand">
+    <span class="brand-mark">&gt;_</span>
+    <span class="brand-title">Goose Activity Monitor</span>
+  </div>
+  <div id="live-indicator" class="indicator is-reconnecting" role="status" aria-live="polite">
+    <span class="dot"></span><span class="indicator-label">RECONNECTING</span>
+  </div>
+  <div class="counters">
+    <span class="counter" id="counter-sessions" title="Sessions tracked">
+      <span class="counter-label">sessions</span><span class="counter-value">0</span>
+    </span>
+    <span class="counter counter-alert" id="counter-alerts" title="Total security alerts">
+      <span class="counter-label">alerts</span><span class="counter-value">0</span>
+    </span>
+  </div>
+</header>
+
+<div id="layout">
+  <aside id="sidebar" aria-label="Sessions"></aside>
+
+  <main id="main">
+    <div id="toolbar">
+      <button type="button" id="toggle-sidebar" title="Show/hide the session list" aria-pressed="false">&#9776; Sessions</button>
+      <input type="search" id="search-global" placeholder="Search all fields…" aria-label="Global search">
+      <div id="quick-filters" role="group" aria-label="Quick filters">
+        <button type="button" class="quick-btn active" data-quick="ALL">ALL</button>
+        <button type="button" class="quick-btn" data-quick="COMMANDS">COMMANDS</button>
+        <button type="button" class="quick-btn" data-quick="MODEL">MODEL</button>
+        <button type="button" class="quick-btn" data-quick="TOOLS">TOOLS</button>
+        <button type="button" class="quick-btn" data-quick="NETWORK">NETWORK</button>
+        <button type="button" class="quick-btn" data-quick="ERRORS">ERRORS</button>
+        <button type="button" class="quick-btn" data-quick="ALERTS">ALERTS</button>
+      </div>
+      <label id="redaction-toggle-label" class="toolbar-toggle">
+        <input type="checkbox" id="redaction-toggle">Redaction
+      </label>
+      <button type="button" id="reset-columns">Reset columns</button>
+    </div>
+    <div id="table-wrap">
+      <table id="events">
+        <colgroup id="col-group">
+          <col data-col="date">
+          <col data-col="command">
+          <col data-col="explained">
+          <col data-col="attack">
+          <col data-col="response">
+          <col data-col="error">
+          <col data-col="external">
+        </colgroup>
+        <thead>
+          <tr class="col-headers">
+            <th data-col="date">Date<span class="col-resize-handle" aria-hidden="true"></span></th>
+            <th data-col="command">Command Executed<span class="col-resize-handle" aria-hidden="true"></span></th>
+            <th data-col="explained">Command Explained<span class="col-resize-handle" aria-hidden="true"></span></th>
+            <th data-col="attack">MITRE ATT&amp;CK<span class="col-resize-handle" aria-hidden="true"></span></th>
+            <th data-col="response">Command Response<span class="col-resize-handle" aria-hidden="true"></span></th>
+            <th data-col="error">Error Encountered<span class="col-resize-handle" aria-hidden="true"></span></th>
+            <th data-col="external">External Connection<span class="col-resize-handle" aria-hidden="true"></span></th>
+          </tr>
+          <tr class="col-filters" id="filter-row">
+            <th data-col="date"></th>
+            <th data-col="command"></th>
+            <th data-col="explained"></th>
+            <th data-col="attack"></th>
+            <th data-col="response"></th>
+            <th data-col="error"></th>
+            <th data-col="external"></th>
+          </tr>
+        </thead>
+        <tbody id="events-body"></tbody>
+      </table>
+    </div>
+  </main>
+</div>
+
+<dialog id="detail"></dialog>
+
+<script src="/static/app.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+bind_host: 0.0.0.0
+bind_port: 8787
+basic_auth:
+  username: admin
+  password: "changeme"        # empty -> server refuses to start
+sources:
+  # Goose's session store (default location for a per-user Goose install).
+  sessions_db: ~/.local/share/goose/sessions/sessions.db
+  # The gateway's audit log. Default is relative to the monitor/ directory
+  # (run-monitor.sh runs from there), i.e. <repo>/gateway/state/audit.log.
+  audit_log: ../gateway/state/audit.log
+events_db: ./events.db
+poll_interval_ms: 500
+status:
+  active_window_s: 60
+  idle_window_s: 1800
+retention:
+  max_age_days: 30
+  max_events: 500000
+redaction:
+  enabled: true
+llm_explain:
+  enabled: false

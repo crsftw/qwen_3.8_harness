@@ -1,0 +1,7 @@
+# Goose config template — copy to ~/.config/goose/config.yaml
+# The `goose configure` wizard is authoritative if this schema drifts.
+# NO SECRETS IN THIS FILE (docs/ANTI_PATTERNS.md Pattern 1) — Ollama needs none.
+GOOSE_PROVIDER: ollama
+GOOSE_MODEL: qwen3.8:27b
+GOOSE_MODE: smart_approve      # human approval for risky/edit actions (plan requirement)
+OLLAMA_HOST: localhost:11434
