@@ -1,5 +1,5 @@
 fastapi==0.141.*
-uvicorn[standard]==0.30.*
+uvicorn[standard]==0.52.*
 PyYAML==6.*
-pytest==8.*
+pytest==9.*
 httpx==0.28.*

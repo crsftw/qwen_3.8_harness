@@ -1,13 +1,19 @@
 version: 2
 updates:
-  # Python deps for the monitor dashboard.
+  # Python deps for the monitor dashboard — one grouped PR per week.
   - package-ecosystem: "pip"
     directory: "/monitor"
     schedule:
       interval: "weekly"
     open-pull-requests-limit: 5
-  # Keep GitHub Actions pinned versions current.
+    groups:
+      monitor-python:
+        patterns: ["*"]
+  # Keep GitHub Actions pinned versions current — one grouped PR per week.
   - package-ecosystem: "github-actions"
     directory: "/"
     schedule:
       interval: "weekly"
+    groups:
+      github-actions:
+        patterns: ["*"]
