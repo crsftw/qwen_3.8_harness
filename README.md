@@ -49,6 +49,7 @@ A live, dark security-operations dashboard that **watches** the agent — it ope
 - **Session sidebar** with `id_keyword` labels and live status (ACTIVE / IDLE / COMPLETED / ERROR).
 - **Event table:** timestamp, command, a plain-English explanation, **MITRE ATT&CK tactic:technique** (e.g. *Reconnaissance: Active Scanning*), response, errors, and external connections — with per-column wildcard filters, quick filters, expand/collapse, resizable/persisted columns, and a detail view.
 - **Reverse-shell detection:** multi-indicator weighted scoring that flags suspected reverse shells (tuned to not false-positive on ordinary recon), shown as pulsing alerts.
+- **Confirmed findings (vuln / bypass / execution):** flags tool-output evidence that the model *actually* achieved something — SQLi, auth bypass, a shell on the target, captured secrets/flags — not just the model's claims.
 - **Security-first:** LAN-bound + HTTP Basic Auth on every route, model chain-of-thought never stored or shown, optional secret redaction.
 
 
