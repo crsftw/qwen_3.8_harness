@@ -60,7 +60,7 @@ git clone https://github.com/crsftw/qwen_3.8_harness.git && cd qwen_3.8_harness
 
 # 2. Model backend: pull a tool-capable Qwen model into Ollama
 #    (this repo used qwen3.8:27b; substitute any Ollama chat model with tool support)
-ollama pull qwen2.5:32b            # example substitute
+ollama pull qwen3.8:27b            # example substitute
 
 # 3. Build the tool-server container images (each has a Dockerfile)
 #    See docs/phase2-sandbox.md … phase6-kali.md for per-tool build/run details.
