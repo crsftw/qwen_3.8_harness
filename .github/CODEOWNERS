@@ -1,0 +1,4 @@
+# Default owner for everything in the repo. Combined with branch protection's
+# "Require review from Code Owners", this makes @crsftw a required reviewer on
+# pull requests.
+* @crsftw
