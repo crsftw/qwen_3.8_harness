@@ -1,4 +1,4 @@
-# qwen_harness
+# qwen_3.8_harness
 
 **A self-hosted, sandboxed Linux / security agent for a locally-run LLM — with real containment, tiered permissions, human approval, and a live activity-monitoring dashboard.**
 
@@ -56,7 +56,7 @@ Full details: [`monitor/README.md`](monitor/README.md).
 
 ```bash
 # 1. Clone
-git clone <your-fork-url> qwen_harness && cd qwen_harness
+git clone https://github.com/crsftw/qwen_3.8_harness.git && cd qwen_3.8_harness
 
 # 2. Model backend: pull a tool-capable Qwen model into Ollama
 #    (this repo used qwen3.8:27b; substitute any Ollama chat model with tool support)
@@ -117,7 +117,9 @@ Step-by-step setup for each component lives in [`docs/`](docs/) (`phase1-goose-s
 
 ## License
 
-No license is set yet. **Add one before publishing** (e.g. MIT or Apache-2.0) — until then, default copyright applies and others cannot legally reuse the code.
+Licensed under the **Apache License 2.0** — see [`LICENSE`](LICENSE) and [`NOTICE`](NOTICE).
+
+Copyright 2026 Cristian Cornea.
 
 ## Disclaimer
 
