@@ -104,3 +104,30 @@ def test_collector_poll_once_ingests_and_correlates(tmp_path):
     assert tool_ev["tier"]=="HIGH" and tool_ev["command"]=="nmap x"
     sess=store.list_sessions()[0]
     assert sess["label"].startswith("s1_asus_router")
+
+
+def test_collector_dedupes_across_goose_message_renumber(tmp_path):
+    # Goose periodically rewrites its messages table, re-appending the whole
+    # history with fresh (higher) autoincrement ids. The collector's id-cursor
+    # then sees the entire history as "new" and re-ingests it. With content-
+    # stable event_ids this must NOT create duplicate rows.
+    gpath=str(tmp_path/"g.db"); _goose_db(gpath)
+    apath=tmp_path/"audit.log"; apath.write_text("")
+    cfg=Config(sessions_db=gpath, audit_log=str(apath), events_db=str(tmp_path/"e.db"), auth_password="x")
+    store=Store(cfg.events_db); hub=Hub()
+    col=Collector(cfg, store, hub)
+    col.poll_once()
+    cnt1 = store.db.execute("SELECT COUNT(*) c FROM events").fetchone()["c"]
+    assert cnt1 == 1  # one tool_call from the req/resp pair
+
+    # Simulate a goose rewrite: same two messages re-appended with NEW row ids.
+    req=[{"type":"toolRequest","id":"c1","toolCall":{"value":{"name":"sandbox_bash","arguments":{"command":"nmap x"}}},"_meta":{"goose_extension":"gateway"}}]
+    resp=[{"type":"toolResponse","id":"c1","toolResult":{"value":{"structuredContent":{"stdout":"open","stderr":"","exit_code":0},"isError":False}}}]
+    g=sqlite3.connect(gpath)
+    g.execute("INSERT INTO messages(session_id,role,content_json,created_timestamp) VALUES('s1','assistant',?,1000)",(json.dumps(req),))
+    g.execute("INSERT INTO messages(session_id,role,content_json,created_timestamp) VALUES('s1','user',?,1001)",(json.dumps(resp),))
+    g.commit(); g.close()
+
+    col.poll_once()
+    cnt2 = store.db.execute("SELECT COUNT(*) c FROM events").fetchone()["c"]
+    assert cnt2 == 1  # still exactly one -- no duplicate created by the rewrite

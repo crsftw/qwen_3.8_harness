@@ -13,6 +13,12 @@ class Collector:
         self.state=MessageState()
         self.known_sessions=set()
         self.error_count=0
+        # event_ids already ingested this process lifetime. Goose rewrites its
+        # messages table constantly (renumbering rows), so the id-cursor re-reads
+        # the whole history after every rewrite; this set lets the normalizer skip
+        # re-detecting content we've already stored. Persistence-level dedup is
+        # still guaranteed by the UNIQUE(event_id) constraint in the store.
+        self.seen=set()
 
     def poll_once(self):
         for rec in self.tailer.read_new():
@@ -30,7 +36,7 @@ class Collector:
         for row in msgs:
             row_id = row["id"]
             try:
-                for ev in self.state.feed(row):
+                for ev in self.state.feed(row, self.seen):
                     if ev["event_type"]=="tool_call":
                         m=self.audit.match(ev["tool"], ev.get("arguments"), ev["timestamp_ms"])
                         if m:
@@ -39,6 +45,7 @@ class Collector:
                             if decision.upper().startswith(("DENIED","BLOCK")) and ev.get("error") is None:
                                 ev["error"] = "Tool call blocked"
                     seq=self.store.insert_event(ev)
+                    self.seen.add(ev["event_id"])
                     ev_out=dict(ev); ev_out["seq"]=seq
                     self._emit({"kind":"event","event":ev_out})
             except Exception as e:
