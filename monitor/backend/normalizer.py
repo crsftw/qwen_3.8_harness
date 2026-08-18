@@ -1,7 +1,13 @@
-import json, re
+import hashlib, json, re
 from backend import detection
 from backend import attack as attack_mod
 from backend import findings as findings_mod
+
+def _hash(*parts):
+    # Short, stable digest of content -- used to build event_ids that survive
+    # Goose renumbering its message rows. Never derive an id from the row id.
+    raw = "\x1f".join("" if p is None else str(p) for p in parts)
+    return hashlib.sha1(raw.encode("utf-8", "replace")).hexdigest()[:16]
 
 def slug(name, fallback=""):
     base = (name or "").strip() or (fallback or "").strip()
@@ -31,27 +37,39 @@ class MessageState:
     def __init__(self):
         self.pending = {}   # call_id -> (row, request_item)
 
-    def feed(self, row):
+    def feed(self, row, seen=None):
+        # `seen` (optional set of already-ingested event_ids) lets the caller
+        # short-circuit re-ingested content after a Goose table rewrite before
+        # the expensive detection pass runs -- see Collector.
         events = []
         for it in iter_content(row["content_json"]):
             typ = it.get("type")
             if typ == "toolRequest":
                 self.pending[it.get("id")] = (row, it)
             elif typ == "toolResponse":
-                events += self._pair(row, it)
+                events += self._pair(row, it, seen)
             elif typ == "text":
                 etype = "assistant_message" if row["role"] == "assistant" else "user_message"
-                e = _mk_event(row, etype, command=it.get("text"), raw_json=it)
-                e["event_id"] = f"{row['session_id']}:{row['id']}:msg"
+                text = it.get("text")
+                eid = f"{row['session_id']}:m:{int(row['created_timestamp'])}:{_hash(row['role'], text)}"
+                if seen is not None and eid in seen:
+                    continue
+                e = _mk_event(row, etype, command=text, raw_json=it)
+                e["event_id"] = eid
                 events.append(e)
         return events
 
-    def _pair(self, resp_row, resp_it):
+    def _pair(self, resp_row, resp_it, seen=None):
         cid = resp_it.get("id")
         req = self.pending.pop(cid, None)
         if not req:
             return []
         req_row, req_it = req
+        # The model's tool call-id (cid) is stable across Goose rewrites; the
+        # row id is not. Prefer cid; skip the detection pass if already seen.
+        eid = f"{req_row['session_id']}:{cid}" if cid else None
+        if eid and seen is not None and eid in seen:
+            return []
         val = (req_it.get("toolCall") or {}).get("value") or {}
         tool = val.get("name"); args = val.get("arguments") or {}
         ext = (req_it.get("_meta") or {}).get("goose_extension")
@@ -75,6 +93,8 @@ class MessageState:
                                            http_status=None, exit_code=exit_code,
                                            connections=conns, security_alerts=alerts, tool=tool)
         etype = "tool_call"
+        if eid is None:  # no cid -> fall back to a content-stable digest
+            eid = f"{req_row['session_id']}:t:{_hash(int(resp_row['created_timestamp']), tool, command, stdout)}"
         return [_mk_event(req_row, etype, tool=tool, extension=ext,
                           command=command, arguments=args,
                           command_explained=explained,
@@ -86,5 +106,5 @@ class MessageState:
                           findings=finds,
                           finding_severity=(finds[0]["severity"] if finds else None),
                           finding_category=(finds[0]["category"] if finds else None),
-                          event_id=f"{req_row['session_id']}:{req_row['id']}:{cid}",
+                          event_id=eid,
                           raw_json={"request":req_it,"response":resp_it})]
